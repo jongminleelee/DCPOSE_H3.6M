@@ -26,11 +26,17 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Inference pose estimation Network')
 
     parser.add_argument('--cfg', help='experiment configure file name', required=False, type=str,
-                        default="./configs/posetimation/DcPose/posetrack17/model_RSN_inference.yaml")
+                        default="./configs/posetimation/DcPose/posetrack18/model_RSN_inference.yaml")
+                        
+                        # origin : "./configs/posetimation/DcPose/posetrack17/model_RSN_inference.yaml"
     parser.add_argument('--PE_Name', help='pose estimation model name', required=False, type=str,
                         default='DcPose')
     parser.add_argument('-weight', help='model weight file', required=False, type=str
-                        , default='./DcPose_supp_files/pretrained_models/DCPose/PoseTrack17_DCPose.pth')
+                        , default="/home/jongmin2/DCPose-main/output/PE/DcPose/DCPose_Network_Model_RSN/PoseTrack18/chPRF_34_nPRF_2_chPTM_17_nPTM_1_chComb_64_nComb_2_D_3,6,9,12,15/checkpoints/epoch_2_state.pth")
+                        
+                        # origin : './DcPose_supp_files/pretrained_models/DCPose/PoseTrack17_DCPose.pth'
+                        # posetrack2018 
+                        # "/home/jongmin2/DCPose2/DCPose/output/PE/DcPose/DCPose_Network_Model_RSN/PoseTrack18/chPRF_34_nPRF_2_chPTM_17_nPTM_1_chComb_64_nComb_2_D_3,6,9,12,15/checkpoints/epoch_7_state.pth"
     parser.add_argument('--gpu_id', default='0')
     parser.add_argument('opts', help="Modify config options using the command-line", default=None, nargs=argparse.REMAINDER)
 
@@ -38,7 +44,9 @@ def parse_args():
     args = parser.parse_args()
     args.rootDir = root_dir
     args.cfg = os.path.abspath(os.path.join(args.rootDir, args.cfg))
-    args.weight = os.path.abspath(os.path.join(args.rootDir, args.weight))
+    args.weight = os.path.abspath(args.weight)
+    print(args.weight)
+    # args.weight = os.path.abspath(os.path.join(args.rootDir, args.weight))
     return args
 
 
@@ -70,16 +78,19 @@ aspect_ratio = image_size[0] * 1.0 / image_size[1]
 def image_preprocess(image_path: str, prev_image: str, next_image: str, center, scale):
     trans_matrix = get_affine_transform(center, scale, 0, image_size)
     image_data = read_image(image_path)
+    image_data = image_data[:,:,::-1]
     image_data = cv2.warpAffine(image_data, trans_matrix, (int(image_size[0]), int(image_size[1])), flags=cv2.INTER_LINEAR)
     image_data = image_transforms(image_data)
     if prev_image is None or next_image is None:
         return image_data
     else:
         prev_image_data = read_image(prev_image)
+        prev_image_data = prev_image_data[:,:,::-1]
         prev_image_data = cv2.warpAffine(prev_image_data, trans_matrix, (int(image_size[0]), int(image_size[1])), flags=cv2.INTER_LINEAR)
         prev_image_data = image_transforms(prev_image_data)
 
         next_image_data = read_image(next_image)
+        next_image_data = next_image_data[:,:,::-1]
         next_image_data = cv2.warpAffine(next_image_data, trans_matrix, (int(image_size[0]), int(image_size[1])), flags=cv2.INTER_LINEAR)
         next_image_data = image_transforms(next_image_data)
 

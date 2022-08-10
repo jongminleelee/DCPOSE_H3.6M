@@ -2,6 +2,7 @@
 # -*- coding:utf8 -*-
 import numpy as np
 import math
+import cv2
 
 from .affine_transform import get_affine_transform, exec_affine_transform
 
@@ -72,7 +73,7 @@ def transform_preds(coords, center, scale, output_size):
     return target_coords
 
 
-def generate_heatmaps(joints, joints_vis, sigma, image_size, heatmap_size, num_joints, **kwargs):
+def generate_heatmaps(joints, joints_vis, sigma, image_size, heatmap_size, num_joints, optical_image, **kwargs):
     """
         :param joints:  [num_joints, 3]
         :param joints_vis: [num_joints, 3]
@@ -97,6 +98,41 @@ def generate_heatmaps(joints, joints_vis, sigma, image_size, heatmap_size, num_j
         feat_stride = image_size / heatmap_size
         mu_x = int(joints[joint_id][0] / feat_stride[0] + 0.5)
         mu_y = int(joints[joint_id][1] / feat_stride[1] + 0.5)
+        
+        image_x = int(joints[joint_id][0])
+        image_y = int(joints[joint_id][1])
+        
+        
+        #print("mu_x : ")
+        #print(mu_x)
+        #print("image_size : {}".format(image_size))
+        
+        # opticlflow 이미지 기반으로 하여, 모션 heatmap 생성에 대한 부분 필요. 
+        # heatmap generator 시, opticalimage를 받아서 hsv로 변환한 다음. 
+        # angle 값과 vector 크기값을 호출해야함. 
+        
+        # 확대 축소 flip 등에 대한 과정이 진행되면서 조인트의 값이 보이기도 하고, 안 보이는 상황이 발생하게 된다. 
+        # 즉 안보이는 것에 대해서는 target_weight[:, 0] = joints_vis[:, 0] 의 값을 통해서 해결을 해야하는 상황이다. !! 
+        
+        if optical_image is None:
+            optical_direction = 0
+            pass
+        
+        # mu_x 와 mu_y 는 수정된 히트맵 크기의 x,y좌표이기 때문에 ... 
+        # opticalflow 이미지 방향과는 맞지 않는다.     
+            
+        elif image_x < 0 or image_x >= 288 or image_y < 0 or image_y >= 384:
+            optical_direction = 0
+            pass        
+        else:
+            hsv_image = cv2.cvtColor(optical_image,cv2.COLOR_BGR2HSV)
+            #print(hsv_image.shape)
+            optical_direction = hsv_image[image_y,image_x,0]*2
+            #print(hsv_image[image_y,image_x,0])
+            #print("------")
+            #print(optical_direction)
+            optical_mag = hsv_image[image_y,image_x,2]
+        
         # Check that any part of the gaussian is in-bounds
         ul = [int(mu_x - tmp_size), int(mu_y - tmp_size)]
         br = [int(mu_x + tmp_size + 1), int(mu_y + tmp_size + 1)]
@@ -111,9 +147,22 @@ def generate_heatmaps(joints, joints_vis, sigma, image_size, heatmap_size, num_j
         x = np.arange(0, size, 1, np.float32)
         y = x[:, np.newaxis]
         x0 = y0 = size // 2
+        
+        g = np.zeros((21,21))
+        g3 = np.zeros((21,21))
+        
         # The gaussian is not normalized, we want the center value to equal 1
-        g = np.exp(- ((x - x0) ** 2 + (y - y0) ** 2) / (2 * sigma ** 2))
+        g1 = np.exp(- ((x - x0) ** 2 + (y - y0) ** 2) / (2 * sigma ** 2))
+        
 
+        if optical_direction == 0 or optical_direction == 360 : 
+            g = g1
+        else:         
+            g2 = cv2.resize(g1,(21,11),interpolation=cv2.INTER_AREA)
+            g3[y0-5:y0+6,:] = g2
+            rot = cv2.getRotationMatrix2D((x0,y0),optical_direction,1)   
+            g = cv2.warpAffine(g3,rot,(0,0))
+            
         # Usable gaussian range
         g_x = max(0, -ul[0]), min(br[0], heatmap_size[0]) - ul[0]
         g_y = max(0, -ul[1]), min(br[1], heatmap_size[1]) - ul[1]
@@ -123,8 +172,7 @@ def generate_heatmaps(joints, joints_vis, sigma, image_size, heatmap_size, num_j
 
         v = target_weight[joint_id]
         if v > 0.5:
-            target[joint_id][img_y[0]:img_y[1], img_x[0]:img_x[1]] = \
-                g[g_y[0]:g_y[1], g_x[0]:g_x[1]]
+            target[joint_id][img_y[0]:img_y[1], img_x[0]:img_x[1]] = g[g_y[0]:g_y[1], g_x[0]:g_x[1]]
 
     if ("use_different_joints_weight" in kwargs) and (kwargs["use_different_joints_weight"]):
         target_weight = np.multiply(target_weight, kwargs["joints_weight"])

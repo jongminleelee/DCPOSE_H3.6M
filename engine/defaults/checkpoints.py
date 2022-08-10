@@ -57,10 +57,11 @@ def resume(model, optimizer, checkpoint_file, **kwargs):
     checkpoint = torch.load(checkpoint_file)
     begin_epoch = checkpoint['begin_epoch'] + 1
     gpus = kwargs.get("gpus", [])
-    if len(gpus) <= 1:
-        state_dict = {k.replace('module.', '') if k.index('module') == 0 else k: v for k, v in checkpoint['state_dict'].items()}
-    else:
-        state_dict = checkpoint["state_dict"]
+    #if len(gpus) <= 1:
+    #    state_dict = {k.replace('module.', '') if k.index('module') == 0 else k: v for k, v in checkpoint['state_dict'].items()}
+    #else:
+    
+    state_dict = checkpoint["state_dict"]
     model.load_state_dict(state_dict)
     optimizer.load_state_dict(checkpoint['optimizer'])
 

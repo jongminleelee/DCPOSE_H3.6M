@@ -2,7 +2,7 @@
 # -*- coding:utf8 -*-
 
 import numpy as np
-from datasets.zoo.posetrack import PoseTrack_Official_Keypoint_Ordering, PoseTrack_COCO_Keypoint_Ordering
+from datasets.zoo.posetrack import PoseTrack_Official_Keypoint_Ordering, PoseTrack_COCO_Keypoint_Ordering, H36m_COCO_Keypoint_Ordering, h36m_Keypoint_Pairs
 
 
 def coco2posetrack_ord(preds, global_score=1):
@@ -75,8 +75,12 @@ def coco2posetrack_ord_infer(pose, global_score=1, output_posetrack_format=False
         data = np.zeros((len(dst_kps), 3))
     else:
         data = []
+        
+    # dst_index : 단순 정수 매핑 
+        
     for dst_index, posetrack_keypoint_name in enumerate(dst_kps):
         if posetrack_keypoint_name in src_kps:
+            # list.index()  => 안에 들어 있 리스트의 인덱스를 알려준다. 
             index = src_kps.index(posetrack_keypoint_name)
             local_score = (pose[index, 2] + pose[index, 2]) / 2
             conf = local_score * global_score
@@ -132,5 +136,36 @@ def coco2posetrack_ord_infer(pose, global_score=1, output_posetrack_format=False
                              'x': [float(x_tophead)],
                              'y': [float(y_tophead)],
                              'score': [local_score]})
+
+    return data
+
+
+
+# h36m --------------------------------------------------------------------------------------
+
+def h36m_ord_infer(pose, global_score=1, output_posetrack_format=False):
+    # pose [x,y,c]
+    src_kps = H36m_COCO_Keypoint_Ordering
+    if not output_posetrack_format:
+        data = np.zeros((len(src_kps), 3))
+    else:
+        data = []
+        
+    # dst_index : 단순 정수 매핑 
+        
+    for dst_index, posetrack_keypoint_name in enumerate(src_kps):
+        if posetrack_keypoint_name in src_kps:
+            # list.index()  => 안에 들어 있 리스트의 인덱스를 알려준다. 
+            index = src_kps.index(posetrack_keypoint_name)
+            local_score = (pose[index, 2] + pose[index, 2]) / 2
+            conf = local_score * global_score
+            if not output_posetrack_format:
+                data[dst_index, :] = pose[index]
+                data[dst_index, 2] = conf
+            else:
+                data.append({'id': [dst_index],
+                             'x': [float(pose[index, 0])],
+                             'y': [float(pose[index, 1])],
+                             'score': [conf]})
 
     return data

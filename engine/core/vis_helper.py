@@ -6,7 +6,9 @@ import os.path as osp
 
 from utils.utils_image import read_image, save_image
 from datasets.process.keypoints_ord import coco2posetrack_ord_infer
-from datasets.zoo.posetrack.pose_skeleton import PoseTrack_Official_Keypoint_Ordering, PoseTrack_Keypoint_Pairs
+
+# h36m로 수정 ---------------------------------------------------------
+from datasets.zoo.posetrack.pose_skeleton import PoseTrack_Official_Keypoint_Ordering, PoseTrack_Keypoint_Pairs, H36m_COCO_Keypoint_Ordering, h36m_Keypoint_Pairs
 from utils.utils_color import COLOR_DICT
 
 
@@ -75,9 +77,12 @@ def add_bbox_in_image(image, bbox):
 
 
 def add_poseTrack_joint_connection_to_image(img_demo, joints, sure_threshold=0.8, flag_only_draw_sure=False, ):
-    for joint_pair in PoseTrack_Keypoint_Pairs:
-        ind_1 = PoseTrack_Official_Keypoint_Ordering.index(joint_pair[0])
-        ind_2 = PoseTrack_Official_Keypoint_Ordering.index(joint_pair[1])
+    
+
+    # h36m로 수정 ---------------------------------------------------------jongmin reviesed ---------------------------------------
+    for joint_pair in h36m_Keypoint_Pairs:
+        ind_1 = H36m_COCO_Keypoint_Ordering.index(joint_pair[0])
+        ind_2 = H36m_COCO_Keypoint_Ordering.index(joint_pair[1])
 
         color = COLOR_DICT[joint_pair[2]]
 

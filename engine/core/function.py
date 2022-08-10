@@ -116,11 +116,22 @@ class CommonFunction(BaseFunction):
                                                                         data_time=data_time, loss=losses, acc=acc)
 
                 logger.info(msg)
-
+            
+            print(target_heatmaps.size())
+            
             # For Tensorboard
             self.tb_writer.add_scalar('train_loss', losses.val, self.global_steps)
             self.tb_writer.add_scalar('train_acc', acc.val, self.global_steps)
-            self.global_steps += 1
+            
+            # tensorboard 이미지를 보기 위해 추가된 코드 해당 부분에 대해서 좀 더 자세한 코드 리뷰가 필요함!! 
+            # jongmin reviesed and added code
+            # 기본적으로 batchsize * [17채널] * 높이 * 너비 형태로 데이터가 들어옴. 17채널 부분을 바꾸어주어야함. -> torch.Size([32, 17, 96, 72])
+            # 17개의 heatmap을 한번 받도록 concat을 할 것인지 .. 아니면 .. 음... 어떻게 해야할까?? 
+            #for h in range(0,17):
+            #    heatmap = make_grid(target_heatmaps[h].detach(), nrow=int(np.sqrt(target_heatmaps.shape[0])), padding=2, normalize=True, range=(0, 1))
+            #    self.tb_writer.add_image('gt_heatmap', heatmap, global_step=self.global_steps)       
+            
+            self.global_steps += 1      
 
         tb_writer_dict["global_steps"] = self.global_steps
 

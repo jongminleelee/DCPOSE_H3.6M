@@ -9,7 +9,8 @@ sys.path.insert(0, osp.abspath('../'))
 from tqdm import tqdm
 import logging
 
-from datasets.process.keypoints_ord import coco2posetrack_ord_infer
+from datasets.process.keypoints_ord import coco2posetrack_ord_infer, h36m_ord_infer
+
 from tools.inference import inference_PE
 from object_detector.YOLOv3.detector_yolov3 import inference_yolov3
 from utils.utils_folder import list_immediate_childfile_paths, create_folder
@@ -33,7 +34,14 @@ def video():
     base_img_vis_save_dirs = './output/vis_img'
     json_save_base_dirs = './output/json'
     create_folder(json_save_base_dirs)
-    video_list = list_immediate_childfile_paths(base_video_path, ext=['mp3', 'mp4'])
+    #video_list = list_immediate_childfile_paths(base_video_path, ext=['mp3', 'mp4'])
+    
+    # jongmin code ---------------------------------------------------------------------------
+    video_list = ["input.mp4"]
+    
+    
+    
+    
     input_image_save_dirs = []
     SAVE_JSON = True
     SAVE_VIS_VIDEO = True
@@ -103,8 +111,11 @@ def video():
             keypoints = inference_PE(image_path, prev_image_path, next_image_path, bbox)
             person_info["keypoints"] = keypoints.tolist()[0]
 
+            # jongmin revised code
             # posetrack points
-            new_coord = coco2posetrack_ord_infer(keypoints[0])
+            #new_coord = coco2posetrack_ord_infer(keypoints[0])
+            new_coord = h36m_ord_infer(keypoints[0])
+            
             # pose
             if SAVE_VIS_IMAGE:
                 image_save_path = os.path.join(os.path.join(base_img_vis_save_dirs, video_name), image_path.split("/")[-1])
